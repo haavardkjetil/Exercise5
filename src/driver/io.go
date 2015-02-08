@@ -27,6 +27,17 @@ const (
 	N_BUTTONS = 3
 )
 
+//TODO: OG dette?
+type MotorDirection_t int
+
+const(
+	DIR_DOWN = -1
+	DIR_STOP = 0
+	DIR_UP = 1
+)
+
+
+
 var (
 	lampChannelMatrix = [N_FLOORS][N_BUTTONS]int{
 		
@@ -44,9 +55,9 @@ var (
 	}
 )
 
-func Init() int {
+func Init() bool {
 	if (int(C.io_init()) == 0) {
-		return 0
+		return false
 	} 
 	for etg := 0; etg < N_FLOORS; etg++ {
 		if (etg != 0) {
@@ -60,32 +71,36 @@ func Init() int {
 	SetStopLamp(0)
 	SetDoorLamp(0)
 	SetFloorIndicator(0)
-	return 1
+	return true
 }
 
-func SetMotorDirection() {
-	
+func SetMotorDirection(dir MotorDirection_t) {
+	if dir == 0{
+		C.io_write_analog(MOTOR,0)
+	}else if (dir > 0){
+		C.io_clear_bit(MOTORDIR)
+		C.io_write_analog(MOTOR,2800)
+	}else if (dir < 0){
+		C.io_set_bit(MOTORDIR);
+		C.io_write_analog(MOTOR,2800)
+	}
 }
 
-// DETTE ER NOE FORBANNA DRIT AT DETTE IKKE FUNGERER!!!!!
+
 func GetFloorSensorSignal() int{
-	// if(int(C.io_read_bit(C.int(SENSOR_FLOOR1))) == 1){
- //        return 0
- //    }
- //    if(int(C.io_read_bit(C.int(SENSOR_FLOOR2))) == 1){ 
- //        return 1
- //    }
- //    if(int(C.io_read_bit(C.int(SENSOR_FLOOR3))) == 1){
- //        return 2
- //    }
- //    if(int(C.io_read_bit(C.int(SENSOR_FLOOR4))) == 1){
- //        return 3
- //    }
-    return -1
-    
+	if(int(C.io_read_bit(C.int(SENSOR_FLOOR1))) == 1){
+		return 0
+	}else if (int(C.io_read_bit(C.int(SENSOR_FLOOR2))) == 1) {
+		return 1
+	}else if (int(C.io_read_bit(C.int(SENSOR_FLOOR3))) == 1) {
+		return 2
+	}else if (int(C.io_read_bit(C.int(SENSOR_FLOOR4))) == 1) {
+		return 3
+	}
+	return -1
 }
 
-func GetButtonSignal(button ButtonType_t floor int) int {
+func GetButtonSignal(button ButtonType_t floor int) bool {
 	if floor < 0 || floor >= N_FLOORS {
 		log.Fatal( "Invalid floor number")
 	}
@@ -94,9 +109,9 @@ func GetButtonSignal(button ButtonType_t floor int) int {
 	}
 
 	if(int(C.io_read_bit(C.int(buttonChannelMatrix[floor][button]))) == 1) {
-		return 1
+		return true
 	}else {
-		return 0
+		return false
 	}
 }
 
@@ -143,8 +158,8 @@ func SetButtonLamp(button ButtonType_t floor int, value int) {
 
 }
 
-func GetStopSignal() int {
-	return int(C.io_read_bit(STOP))
+func GetStopSignal() bool {
+	return ( int(C.io_read_bit(STOP)) == 1)
 }
 
 func SetStopLamp(value int) {
@@ -163,8 +178,8 @@ func SetDoorLamp(value int) {
 	}
 }
 
-func GetObstructionSignal() int {
-	return int(C.io_read_bit(OBSTRUCTION))
+func GetObstructionSignal() bool {
+	return ( int(C.io_read_bit(OBSTRUCTION)) == 1)
 }
 
 
